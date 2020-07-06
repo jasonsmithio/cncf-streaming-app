@@ -206,7 +206,7 @@ First we need to ensure that we have our [Kafka Source](https://knative.dev/docs
 cd ../../manifests/kafka
 ```
 
-Let's apply the [KafkaSource component for Eventing version 0.15](https://github.com/knative/eventing-contrib/releases/download/v0.15.0/kafka-source.yaml)
+Let's apply the [Kafka Source extension for Eventing version 0.15](https://github.com/knative/eventing-contrib/releases/download/v0.15.0/kafka-source.yaml). You can extend Knative Eventing and c[reate your own](https://knative.dev/docs/eventing/samples/writing-receive-adapter-source/) event sources, but fortunately Kafka's popularity has resulted in one existing out of box.
 
 ```bash
 kubectl apply -f kafka-source-release.yaml
@@ -261,7 +261,7 @@ Here you can see that we deploy the SinkBinding underthe name `currency-sink-bin
 Now let's deploy.
 
 ```bash
-kubectl apply -f currency-sink-bind.yaml
+kubectl apply -f sink-binding.yaml
 ```
 
 Next we deploy the currency-kafka service. We want to ensure that our sink is ready to receive before we deploy the source.
@@ -270,19 +270,19 @@ Next we deploy the currency-kafka service. We want to ensure that our sink is re
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: currency-kafka
+  name: kafka-producer
 spec:
   template:
     spec:
       containers:
-      - image: gcr.io/PROJECT_ID/currency-kafka:v1
+      - image: gcr.io/PROJECT_ID/kafka-producer:v1
         imagePullPolicy: Always
 ```
 
 This is a standard Knative Service for currency Kafka. Now lets deploy.
 
 ```bash
-kubectl apply -f currency-kafka.yaml
+kubectl apply -f kafka-producer.yaml
 ```
 
 Finally we deploy the currency-controller service. This will start creating events as soon as we deploy. Let's look at the file
@@ -291,19 +291,19 @@ Finally we deploy the currency-controller service. This will start creating even
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: currency-controller
+  name: currency-source
 spec:
   template:
     spec:
       containers:
-      - image: gcr.io/PROJECT_ID/currency-controller:v1
+      - image: gcr.io/PROJECT_ID/currency-source:v1
         imagePullPolicy: Always
 ```
 
 and deploy...
 
 ```bash
-kubectl apply -f currency-controller.yaml
+kubectl apply -f currency-source.yaml
 ```
 
 Now let's ensure that everything is running.
@@ -313,6 +313,36 @@ kubectl get pods
 ```
 
 You should see the `source` and `kafka` service running.
+
+Now let's deploy our `KafkaSource`. This is a custom Eventing source from Knative. It creates a Knative Service that acts as a Kafka consumer and sends the consumed data to an event sink.
+
+Let's take a quick look at `kafka-consumer.yaml`.
+
+```bash
+apiVersion: sources.eventing.knative.dev/v1alpha1
+kind: KafkaSource
+metadata:
+  name: kafka-consumer
+spec:
+  consumerGroup: knative-group
+  bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
+  topics: finance
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+```
+
+Here we are simply saying that Knative Eventing will consume from our Strimzi Kafka cluster uses the 'finance' topic we created earlier. It will then send the data our 'event sink', the 'event-display' service. This service simply logs input to the CLI.
+
+Now we deploy the `event-display`.
+
+```bash
+kubectl apply -f event-display.yaml
+```
+
+
 
 ## Let's Test
 
@@ -331,9 +361,15 @@ Now, let's see what we get
 ```bash
 kafkacat -b ${KAFKA_IP}.xip.io:9092 -F kafka-config.properties -t money-demo -C
 ```
+--->
+### Try it Out
+
+```bash
+kubectl logs --selector='serving.knative.dev/service=event-display' -c user-container
+```
 
 If done correctly, you should see a new number pop up every 30 seconds like:
---->
+
 ```bash
 105.00
 105.67
