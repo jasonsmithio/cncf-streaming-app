@@ -33,10 +33,6 @@ def default_route():
         return jsonify('hello world')
 
 
-#if __name__ == "__main__":
-#    app.debug=True
-#    app.run()
-
 if __name__ != '__main__':
     # Redirect Flask logs to Gunicorn logs
     gunicorn_logger = logging.getLogger('gunicorn.error')

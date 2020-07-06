@@ -1,10 +1,10 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: currency-controller
+  name: currency-source
 spec:
   template:
     spec:
       containers:
-      - image: gcr.io/PROJECT_ID/currency-controller:v1
+      - image: gcr.io/PROJECT_ID/currency-source:v1
         imagePullPolicy: Always

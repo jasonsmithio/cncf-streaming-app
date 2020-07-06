@@ -6,9 +6,9 @@ spec:
   subject:
     apiVersion: serving.knative.dev/v1
     kind: Service
-    name: currency-controller
+    name: currency-source
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
       kind: Service
-      name: currency-kafka
+      name: kafka-producer

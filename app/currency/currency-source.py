@@ -5,25 +5,19 @@ import time
 
 import berglas_python as berglas
 
+from google.cloud import secretmanager
+
 from pathlib import Path  # python3 only
 
 from alpha_vantage.timeseries import TimeSeries
-
-from alpha_vantage.foreignexchange import ForeignExchange
 
 sink_url = os.getenv('K_SINK')
 
 PROJECT_ID = os.environ.get('PROJECT_ID')
 
-#https://pypi.org/project/berglas-python/
+secrets = secretmanager.SecretManagerServiceClient()
 
-my_secret = os.environ.get("MY-SECRET")
-plaintext = berglas.Resolve(PROJECT_ID, my_secret)
-os.environ.unsetenv("MY-SECRET")
-os.environ.setdefault("MY-SECRET", plaintext)
-
-#ALPHAVANTAGE_KEY = secrets.access_secret_version(
-#    "projects/"+PROJECT_ID+"/secrets/alpha-vantage-key/versions/1").payload.data.decode("utf-8")
+ALPHAVANTAGE_KEY = secrets.access_secret_version("projects/"+PROJECT_ID+"/secrets/alpha-vantage-key/versions/1").payload.data.decode("utf-8")
 
 CURR1 = 'USD'
 CURR2 = 'JPY'
