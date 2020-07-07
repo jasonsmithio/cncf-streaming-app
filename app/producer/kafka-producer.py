@@ -6,10 +6,6 @@ import time
 from flask import Flask, jsonify, redirect, render_template, request, Response
 
 from kafka import KafkaProducer
-from kafka.client import SimpleClient
-from kafka.consumer import SimpleConsumer
-from kafka.producer import SimpleProducer
-
 
 app = Flask(__name__)
 

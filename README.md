@@ -206,6 +206,12 @@ First we need to ensure that we have our [Kafka Source](https://knative.dev/docs
 cd ../../manifests/kafka
 ```
 
+First, we will install a kafka cluster using [Strimzi](strimzi.io). We can treat the cluster like another Kubernetes object thanks to Strimzi.
+
+```bash
+kubectl apply -f kafka-cluster.yaml
+```
+
 Let's apply the [Kafka Source extension for Eventing version 0.15](https://github.com/knative/eventing-contrib/releases/download/v0.15.0/kafka-source.yaml). You can extend Knative Eventing and c[reate your own](https://knative.dev/docs/eventing/samples/writing-receive-adapter-source/) event sources, but fortunately Kafka's popularity has resulted in one existing out of box.
 
 ```bash
