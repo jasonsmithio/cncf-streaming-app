@@ -22,6 +22,7 @@ Let's set some system variables such as a `PROJECT_ID` and `BUCKET_ID`. The `PRO
 
 ```bash
 export PROJECT_ID=<YOUR PROJECT ID>
+export PROJ_NUMBER=$(gcloud projects list --filter="${PROJECT_ID}" --format="value(PROJECT_NUMBER)")
 export BUCKET_ID=<YOUR UNIQUE BUCKET NAME>
 export ALPHA_VANTAGE_KEY=<YOUR ALPHAVANTAGE API KEY>
 ```
@@ -34,6 +35,14 @@ gcloud services enable --project ${PROJECT_ID} \
   cloudkms.googleapis.com \
   storage-api.googleapis.com \
   storage-component.googleapis.com
+```
+
+Now we need to give our computer service account access to Secret Manager with this.
+
+```bash
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member serviceAccount:$PROJ_NUMBER-compute@developer.gserviceaccount.com \
+  --role roles/secretmanager.admin
 ```
 
 ### Berglas
