@@ -30,7 +30,7 @@ export ALPHA_VANTAGE_KEY=<YOUR ALPHAVANTAGE API KEY>
 Now let's enable some Google Cloud APIs for [Secret Manager](https://cloud.google.com/secret-manager) and [Cloud Storage](https://cloud.google.com/storage)
 
 ```bash
-gcloud services enable --project ${PROJECT_ID} \
+gcloud services enable --project ${PROJECT_ID} container.googleapis.com \
   secretmanager.googleapis.com\
   cloudkms.googleapis.com \
   storage-api.googleapis.com \
@@ -43,6 +43,14 @@ Now we need to give our computer service account access to Secret Manager with t
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member serviceAccount:$PROJ_NUMBER-compute@developer.gserviceaccount.com \
   --role roles/secretmanager.admin
+```
+
+Finally we will create a role binding for our user on the cluster. 
+
+```bash
+kubectl create clusterrolebinding cluster-admin-binding \
+  --clusterrole cluster-admin \
+  --user $(gcloud config get-value account)
 ```
 
 ### Berglas
