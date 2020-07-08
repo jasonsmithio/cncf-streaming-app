@@ -45,6 +45,15 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/secretmanager.admin
 ```
 
+We are using [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) for added security.j
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  --role roles/iam.workloadIdentityUser \
+  --member "serviceAccount:${PROJECT_ID}.svc.id.goog[default/default]" \
+  ${PROJ_NUMBER}-compute@developer.gserviceaccount.com
+````
+
 Finally we will create a role binding for our user on the cluster. 
 
 ```bash
@@ -211,6 +220,21 @@ docker build -t gcr.io/${PROJECT_ID}/kafka-producer:v1 .
 docker push gcr.io/${PROJECT_ID}/kafka-producer:v1
 ```
 
+### Event Display
+
+This application takes [CloudEvents](https://cloudevents.io/) and then displays them to the CLI via the Kubernetes logs. We will call this service `event-display`.
+
+```bash
+cd ../viewer/
+```
+
+Let's turn this application into a container.
+
+```bash
+docker build -t gcr.io/${PROJECT_ID}/event-viewer:v1 .
+docker push gcr.io/${PROJECT_ID}/event-viewer:v1
+```
+
 Great, now it is time to test and deploy.
 
 ## Deploy Event Producers
@@ -252,6 +276,7 @@ First let's check out our config files.
 ```bash
 sed -i '' 's/PROJECT_ID/'${PROJECT_ID}'/g' currency-source.yaml
 sed -i '' 's/PROJECT_ID/'${PROJECT_ID}'/g' kafka-producer.yaml
+sed -i '' 's/PROJECT_ID/'${PROJECT_ID}'/g' event-viewer.yaml
 ```
 
 We entered the `config` directory and added our `PROJECT_ID` to the `currency-sourcer.yaml` and `kafka-producer.yaml` files.
@@ -342,60 +367,48 @@ Now let's deploy our `KafkaSource`. This is a custom Eventing source from Knativ
 Let's take a quick look at `kafka-consumer.yaml`.
 
 ```bash
-apiVersion: sources.eventing.knative.dev/v1alpha1
+apiVersion: sources.knative.dev/v1alpha1
 kind: KafkaSource
 metadata:
   name: kafka-consumer
 spec:
   consumerGroup: knative-group
-  bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
-  topics: finance
+  bootstrapServers:
+  - my-cluster-kafka-bootstrap.kafka:9092 # note the kafka namespace
+  topics:
+  - finance
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
       kind: Service
-      name: event-display
+      name: event-viewer
 ```
 
 Here we are simply saying that Knative Eventing will consume from our Strimzi Kafka cluster uses the 'finance' topic we created earlier. It will then send the data our 'event sink', the 'event-display' service. This service simply logs input to the CLI.
 
-Now we deploy the `event-display`.
+Now we deploy the `event-viewer`.
 
 ```bash
-kubectl apply -f event-display.yaml
+kubectl apply -f event-viewer.yaml
 ```
-
-
 
 ## Let's Test
 
-<!---There is a tool that I like called *Kafkacat*. It's an open source CLI that makes it pretty easy to work with a Kafka broker without a JVM. You can download it [here](https://github.com/edenhill/kafkacat "here") and follow the instructions for your system.
-
-In the same `config` directory run this.
-
-```bash
-sed 's/KAFKA_IP/'${KAFKA_IP}'/g' kafka-config.sample.properties > kafka-config.properties
-```
-
-This will put you `$KAFKA_IP` in the `kafka-config.properties` file. We will use this file to authenticate with the broker. You will notice that the username is "test" and the password is "test123". It goes without saying that this isn't a best practice for security. For demo purposes, it's fine. There are a myriad of ways to secure your brokers and the various Kafka libraries offer ways to do that.
-
-Now, let's see what we get
-
-```bash
-kafkacat -b ${KAFKA_IP}.xip.io:9092 -F kafka-config.properties -t money-demo -C
-```
---->
 ### Try it Out
 
 ```bash
-kubectl logs --selector='serving.knative.dev/service=event-display' -c user-container
+kubectl logs --selector='serving.knative.dev/service=event-viewer' -c user-container
 ```
 
 If done correctly, you should see a new number pop up every 30 seconds like:
 
 ```bash
-105.00
-105.67
+[2020-07-08 19:08:45 +0000] [1] [INFO] Starting gunicorn 19.9.0
+[2020-07-08 19:08:45 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+[2020-07-08 19:08:45 +0000] [1] [INFO] Using worker: threads
+[2020-07-08 19:08:45 +0000] [9] [INFO] Booting worker with pid: 9
+[2020-07-08 19:08:46 +0000] [9] [INFO] Event Display starting
+[2020-07-08 19:09:15 +0000] [9] [INFO] Event Display received event: "107.20300186" ##Our value!
 ```
 
 ## Summarize
