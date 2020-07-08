@@ -9,7 +9,7 @@ from google.cloud import secretmanager
 
 from pathlib import Path  # python3 only
 
-from alpha_vantage.timeseries import TimeSeries
+from alpha_vantage.foreignexchange import ForeignExchange
 
 sink_url = os.getenv('K_SINK')
 
