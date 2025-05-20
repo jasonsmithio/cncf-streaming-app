@@ -8,3 +8,4 @@ gunicorn==23.0.0
 cloudevents==0.2.4
 requests==2.32.0
 alpha-vantage==2.2.0
+
