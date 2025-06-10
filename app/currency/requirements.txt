@@ -6,5 +6,5 @@ Flask==3.1.1
 kafka-python==2.0.1
 gunicorn==23.0.0
 cloudevents==0.2.4
-requests==2.32.0
+requests==2.32.4
 alpha-vantage==2.2.0
