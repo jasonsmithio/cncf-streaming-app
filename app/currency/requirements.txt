@@ -1,4 +1,4 @@
-pylint==2.4.0
+pylint==4.0.9
 google-cloud==0.34.0
 google-cloud-secret-manager==0.2.0
 berglas-python==0.3.3
